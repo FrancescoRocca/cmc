@@ -1,11 +1,14 @@
 #include "server.h"
 
+#include <errno.h>
 #include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "packets.h"
 
 int cmc_setup_socket() {
 	struct addrinfo hints;
@@ -25,20 +28,20 @@ int cmc_setup_socket() {
 
 	int sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (sockfd == -1) {
-		fprintf(stderr, "socket()\n");
+		fprintf(stderr, "socket(): %s\n", strerror(errno));
 		return -1;
 	}
 
 	ret = bind(sockfd, result->ai_addr, result->ai_addrlen);
 	if (ret != 0) {
-		fprintf(stderr, "bind()\n");
+		fprintf(stderr, "bind(): %s\n", strerror(errno));
 		close(sockfd);
 		return -1;
 	}
 
 	ret = listen(sockfd, 20);
 	if (ret != 0) {
-		fprintf(stderr, "listen()\n");
+		fprintf(stderr, "listen(): %s\n", strerror(errno));
 		close(sockfd);
 		return -1;
 	}
@@ -59,28 +62,13 @@ void cmc_server_loop(int sockfd) {
 			continue;
 		}
 
-		char buf[4096];
+		uint8_t buf[4096];
+
 		/* Read data from client */
 		ssize_t bytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
-		buf[bytes] = '\0';
-		fprintf(stdout, "Received from client: %s\n", buf);
-		char answer[32] = "Bye!";
-		send(client_fd, answer, sizeof(answer), 0);
+		cmc_packet *packet = cmc_parse_packet(buf, bytes);
+		cmc_free_packet(packet);
 
-		close(client_fd);
-	}
-}
-
-/* All data sent over the network (except for VarInt and VarLong) is big-endian */
-int _endianness() {
-	int32_t one = 1;
-	int8_t *p = (int8_t *)&one;
-
-	if (p[0] == 1) {
-		/* Little endian */
-		return 0;
-	} else {
-		/* Big endian */
-		return 1;
+		// close(client_fd);
 	}
 }

@@ -9,10 +9,6 @@ int main(void) {
 		return -1;
 	}
 
-	fprintf(stdout, "sockfd: %d\n", sockfd);
-	int endian = _endianness();
-	fprintf(stdout, "endian: %d\n", endian);
-
 	cmc_server_loop(sockfd);
 
 	return 0;

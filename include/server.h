@@ -7,6 +7,4 @@
 int cmc_setup_socket();
 void cmc_server_loop(int sockfd);
 
-int _endianness();
-
 #endif
