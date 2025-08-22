@@ -1,30 +1,16 @@
 #include "packets.h"
 
+#include <jansson.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 
-/* All data sent over the network (except for VarInt and VarLong) is big-endian */
-static int _endianness() {
-	int32_t one = 1;
-	int8_t *p = (int8_t *)&one;
-
-	/* Big Endian */
-	int endianness = 1;
-
-	if (p[0] == 1) {
-		/* Little Endian */
-		endianness = 0;
-	}
-
-	fprintf(stdout, "Endianness: %d\n", endianness);
-
-	return endianness;
-}
+#include "debug.h"
+#include "json.h"
 
 static void _print_hex(void *buf, ssize_t len) {
-	fprintf(stdout, "[debug] len: %ld\n", len);
 	const uint8_t *p = buf;
 	for (ssize_t i = 0; i < len; ++i) {
 		fprintf(stdout, "0x%02x ", p[i]);
@@ -52,7 +38,40 @@ static int _read_varint(const uint8_t **p) {
 	return value;
 }
 
-cmc_packet *cmc_parse_packet(void *buf, ssize_t len) {
+static int _varint_size(int value) {
+	int size = 0;
+
+	do {
+		value >>= 7;
+		size++;
+	} while (value != 0);
+
+	return size;
+}
+
+static void _write_varint(int fd, int value) {
+	uint8_t buffer[5]; /* Max 5 bytes (VarInt) */
+	int i = 0;
+
+	while (1) {
+		uint8_t temp = value & SEGMENT_BITS; /* Retrieve lower bits */
+		value >>= 7;
+
+		if (value != 0) {
+			temp |= CONTINUE_BIT;
+		}
+
+		buffer[i++] = temp;
+
+		if (value == 0) {
+			break;
+		}
+	}
+
+	send(fd, buffer, i, 0);
+}
+
+cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 	if (!buf || !len) {
 		return NULL;
 	}
@@ -62,25 +81,42 @@ cmc_packet *cmc_parse_packet(void *buf, ssize_t len) {
 		return NULL;
 	}
 	memset(packet, 0, sizeof(cmc_packet));
+	packet->client_fd = client_fd;
 
-	//_endianness();
 	_print_hex(buf, len);
 
 	/* Parse length */
 	const uint8_t *p = buf;
 	uint length = p[0];
 	p++;
-	fprintf(stdout, "[debug] packet length: %d\n", length);
+	CMC_DEBUG("packet length: %d", length);
 
+	/* Parse packet id */
 	packet->id = p[0];
 	p++;
-	fprintf(stdout, "[debug] packet id: %d\n", packet->id);
-	if (packet->id == 0x00) {
-		/* Handshake */
-		fprintf(stdout, "[debug] Handshake\n");
-		packet->handshake = cmc_parse_handshake_packet(p, length);
-		if (!packet->handshake) {
-			return NULL;
+	CMC_DEBUG("packet id: %d", packet->id);
+
+	switch (packet->id) {
+		case 0x00: {
+			/* Handshake */
+			packet->handshake = cmc_parse_handshake_packet(p, length);
+
+			if (!packet->handshake) {
+				return NULL;
+			}
+
+			/* Check intent */
+			switch (packet->handshake->intent) {
+				case STATUS: {
+					cmc_send_status_response(packet);
+					break;
+				}
+				default: {
+					break;
+				}
+			}
+
+			break;
 		}
 	}
 
@@ -96,29 +132,58 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 
 	/* Protocol version */
 	packet->protocol_version = _read_varint(&p);
-	fprintf(stdout, "Protocol version: %ld\n", packet->protocol_version);
+	CMC_DEBUG("Protocol version: %ld", packet->protocol_version);
 
 	/* Server address */
 	uint chars = p[0];
 	p++;
-	fprintf(stdout, "Server address len: %d\n", chars);
+	CMC_DEBUG("Server address len: %d", chars);
 	for (int i = 0; i < chars; ++i) {
 		packet->server_address[i] = p[0];
 		p++;
 	}
 	packet->server_address[chars] = '\0';
-	fprintf(stdout, "Packet server address: %s\n", packet->server_address);
+	CMC_DEBUG("Packet server address: %s", packet->server_address);
 
 	/* Server port (2 bytes) */
 	packet->server_port = p[0] << 8 | p[1];
 	p += 2;
-	fprintf(stdout, "Packet server port: %d\n", packet->server_port);
+	CMC_DEBUG("Packet server port: %d", packet->server_port);
 
 	/* Intent */
-	packet->intent = p[0];
-	fprintf(stdout, "Packet intent: %d\n", packet->intent);
+	uint8_t intent = *p;
+	switch (intent) {
+		case 1: {
+			packet->intent = STATUS;
+			break;
+		}
+		case 2: {
+			packet->intent = LOGIN;
+			break;
+		}
+		case 3: {
+			packet->intent = TRANSFER;
+			break;
+		}
+	}
+	CMC_DEBUG("Packet intent: %d", packet->intent);
 
 	return packet;
+}
+
+void cmc_send_status_response(cmc_packet *packet) {
+	char *dump = cmc_json_build_status("1.21.8", packet->handshake->protocol_version, 20, 0, "Hello, world!");
+	// CMC_DEBUG("%s", dump);
+
+	size_t json_len = strlen(dump);
+	size_t packet_len = _varint_size(json_len) + 1 + json_len;
+
+	_write_varint(packet->client_fd, packet_len);
+	_write_varint(packet->client_fd, 0x00);
+	_write_varint(packet->client_fd, json_len);
+	send(packet->client_fd, dump, json_len, 0);
+
+	free(dump);
 }
 
 void cmc_free_packet(cmc_packet *packet) {
