@@ -97,7 +97,7 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 
 	switch (packet->id) {
 		case 0x00: {
-			/* Handshake */
+			/* Handshake or Login */
 			CMC_DEBUG("=> Handshake");
 			packet->handshake = cmc_parse_handshake_packet(p, packet->length);
 
