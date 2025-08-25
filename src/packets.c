@@ -1,6 +1,7 @@
 #include "packets.h"
 
 #include <jansson.h>
+#include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,19 +88,18 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 
 	/* Parse length */
 	const uint8_t *p = buf;
-	uint length = p[0];
-	p++;
-	CMC_DEBUG("packet length: %d", length);
+	packet->length = _read_varint(&p);
+	CMC_DEBUG("Packet length: %d", packet->length);
 
 	/* Parse packet id */
-	packet->id = p[0];
-	p++;
-	CMC_DEBUG("packet id: %d", packet->id);
+	packet->id = _read_varint(&p);
+	CMC_DEBUG("Packet id: %d", packet->id);
 
 	switch (packet->id) {
 		case 0x00: {
 			/* Handshake */
-			packet->handshake = cmc_parse_handshake_packet(p, length);
+			CMC_DEBUG("=> Handshake");
+			packet->handshake = cmc_parse_handshake_packet(p, packet->length);
 
 			if (!packet->handshake) {
 				return NULL;
@@ -118,12 +118,25 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 
 			break;
 		}
+		case 0x01: {
+			/* Ping */
+			CMC_DEBUG("=> Ping");
+			cmc_send_ping_response(packet, p);
+
+			break;
+		}
 	}
 
 	return packet;
 }
 
 cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) {
+	if (len == 1) {
+		/* Status Request packet */
+		CMC_DEBUG("=> Status Request");
+		return NULL;
+	}
+
 	cmc_handshake_packet *packet = malloc(sizeof(cmc_handshake_packet));
 	if (!packet) {
 		return NULL;
@@ -132,23 +145,22 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 
 	/* Protocol version */
 	packet->protocol_version = _read_varint(&p);
-	CMC_DEBUG("Protocol version: %ld", packet->protocol_version);
+	// CMC_DEBUG("Protocol version: %ld", packet->protocol_version);
 
 	/* Server address */
-	uint chars = p[0];
-	p++;
-	CMC_DEBUG("Server address len: %d", chars);
+	uint chars = *p++;
+	// CMC_DEBUG("Server address len: %d", chars);
 	for (int i = 0; i < chars; ++i) {
 		packet->server_address[i] = p[0];
 		p++;
 	}
 	packet->server_address[chars] = '\0';
-	CMC_DEBUG("Packet server address: %s", packet->server_address);
+	// CMC_DEBUG("Packet server address: %s", packet->server_address);
 
 	/* Server port (2 bytes) */
 	packet->server_port = p[0] << 8 | p[1];
 	p += 2;
-	CMC_DEBUG("Packet server port: %d", packet->server_port);
+	// CMC_DEBUG("Packet server port: %d", packet->server_port);
 
 	/* Intent */
 	uint8_t intent = *p;
@@ -166,7 +178,7 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 			break;
 		}
 	}
-	CMC_DEBUG("Packet intent: %d", packet->intent);
+	// CMC_DEBUG("Packet intent: %d", packet->intent);
 
 	return packet;
 }
@@ -184,6 +196,23 @@ void cmc_send_status_response(cmc_packet *packet) {
 	send(packet->client_fd, dump, json_len, 0);
 
 	free(dump);
+}
+
+void cmc_send_ping_response(cmc_packet *packet, const uint8_t *p) {
+	if (!packet) {
+		return;
+	}
+	int client_fd = packet->client_fd;
+
+	uint8_t payload[8];
+	memcpy(payload, p, 8);
+
+	uint8_t out[10];
+	out[0] = 0x09;
+	out[1] = 0x01;
+	memcpy(out + 2, payload, sizeof(payload));
+
+	send(client_fd, out, sizeof(out), 0);
 }
 
 void cmc_free_packet(cmc_packet *packet) {

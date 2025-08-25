@@ -8,6 +8,11 @@
 #define SEGMENT_BITS 0x7F
 #define CONTINUE_BIT 0x80
 
+/* Packet Format */
+/* Length - VarInt (PacketID + Data) */
+/* Packet ID - VarInt */
+/* Data - ByteArray */
+
 enum cmc_handshake_intent_t {
 	STATUS,
 	LOGIN,
@@ -23,6 +28,7 @@ typedef struct cmc_handshake_packet_t {
 
 typedef struct cmc_packet_t {
 	int client_fd;
+	uint length;
 	uint8_t id;
 	struct cmc_handshake_packet_t *handshake;
 } cmc_packet;
@@ -31,6 +37,7 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len);
 cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *buf, ssize_t len);
 
 void cmc_send_status_response(cmc_packet *packet);
+void cmc_send_ping_response(cmc_packet *packet, const uint8_t *p);
 
 void cmc_free_packet(cmc_packet *packet);
 

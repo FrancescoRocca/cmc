@@ -18,7 +18,7 @@ char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players
 
 	json_t *sample = json_array();
 	json_t *ptest = json_object();
-	json_object_set_new(ptest, "name", json_string("cakeless"));
+	json_object_set_new(ptest, "name", json_string("I'm coded in C!"));
 	json_object_set_new(ptest, "id", json_string("0541ed27-7595-4e6a-9101-6c07f879b7b5"));
 	json_array_append_new(sample, ptest);
 	json_object_set_new(players, "sample", sample);

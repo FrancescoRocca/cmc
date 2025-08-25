@@ -114,6 +114,7 @@ void cmc_handle_client_data(int client_fd, int epfd) {
 	ssize_t bytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	CMC_DEBUG("Received %ld bytes", bytes);
 	if (bytes == 0) {
+	    CMC_DEBUG("Client disconnected");
 		close(client_fd);
 		cmc_epoll_del(epfd, client_fd);
 		return;
