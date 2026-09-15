@@ -1,31 +1,33 @@
 #include "json.h"
 
-#include <jansson.h>
+#include <yyjson.h>
 
 char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players, int online_players,
 							char *description_text) {
-	json_t *root = json_object();
+	yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
+	yyjson_mut_val *root = yyjson_mut_obj(doc);
+	yyjson_mut_doc_set_root(doc, root);
 
-	json_t *version = json_object();
-	json_object_set_new(version, "name", json_string(name));
-	json_object_set_new(version, "protocol", json_integer(protocol));
-	json_object_set_new(root, "version", version);
+	yyjson_mut_val *version = yyjson_mut_obj(doc);
+	yyjson_mut_obj_add_str(doc, version, "name", name);
+	yyjson_mut_obj_add_uint(doc, version, "protocol", protocol);
+	yyjson_mut_obj_add_val(doc, root, "version", version);
 
-	json_t *players = json_object();
-	json_object_set_new(players, "max", json_integer(max_players));
-	json_object_set_new(players, "online", json_integer(online_players));
-	json_object_set_new(root, "players", players);
+	yyjson_mut_val *players = yyjson_mut_obj(doc);
+	yyjson_mut_obj_add_int(doc, players, "max", max_players);
+	yyjson_mut_obj_add_int(doc, players, "online", online_players);
+	yyjson_mut_obj_add_val(doc, root, "players", players);
 
-	json_t *sample = json_array();
-	json_t *ptest = json_object();
-	json_object_set_new(ptest, "name", json_string("I'm coded in C!"));
-	json_object_set_new(ptest, "id", json_string("0541ed27-7595-4e6a-9101-6c07f879b7b5"));
-	json_array_append_new(sample, ptest);
-	json_object_set_new(players, "sample", sample);
+	yyjson_mut_val *sample = yyjson_mut_arr(doc);
+	yyjson_mut_val *ptest = yyjson_mut_obj(doc);
+	yyjson_mut_obj_add_str(doc, ptest, "name", "I'm coded in C!");
+	yyjson_mut_obj_add_str(doc, ptest, "id", "0541ed27-7595-4e6a-9101-6c07f879b7b5");
+	yyjson_mut_arr_add_val(sample, ptest);
+	yyjson_mut_obj_add_val(doc, players, "sample", sample);
 
-	json_t *description = json_object();
-	json_object_set_new(description, "text", json_string(description_text));
-	json_object_set_new(root, "description", description);
+	yyjson_mut_val *description = yyjson_mut_obj(doc);
+	yyjson_mut_obj_add_str(doc, description, "text", description_text);
+	yyjson_mut_obj_add_val(doc, root, "description", description);
 
 	/* TODO: use a config instead of hardcoding the favicon */
 	char favicon[4096] =
@@ -48,12 +50,12 @@ char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players
 		"KT5QYkErOboGNPgDTqK2vgyDgnU7ZvtxML2D5ltitaLTN3NO7RRX/7TmJaKCdTBaprx/f/5StRXES+Qfq2fZ/"
 		"nG9J9gAAAABJRU5ErkJggg==";
 
-	json_object_set_new(root, "favicon", json_string(favicon));
-	json_object_set(root, "enforcesSecureChat", json_boolean(0));
+	yyjson_mut_obj_add_str(doc, root, "favicon", favicon);
+	yyjson_mut_obj_add_bool(doc, root, "enforcesSecureChat", false);
 
-	char *dump = json_dumps(root, JSON_INDENT(4));
+	char *dump = yyjson_mut_write(doc, YYJSON_WRITE_PRETTY, NULL);
 
-	json_decref(root);
+	yyjson_mut_doc_free(doc);
 
 	return dump;
 }
