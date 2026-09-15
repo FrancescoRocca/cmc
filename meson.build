@@ -7,4 +7,4 @@ subdir('src')
 lib_jansson = dependency('jansson')
 deps = [lib_jansson]
 
-executable('cmc', sources, include_directories : inc_dir, dependencies : deps)
+executable('cmc', sources, include_directories: inc_dir, dependencies: deps)

@@ -18,7 +18,7 @@ int cmc_setup_socket() {
 	int ret;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;       /* IPv4 */
+	hints.ai_family = AF_INET;		 /* IPv4 */
 	hints.ai_socktype = SOCK_STREAM; /* TCP */
 	hints.ai_flags = AI_PASSIVE;
 
@@ -53,8 +53,8 @@ int cmc_setup_socket() {
 
 static void cmc_epoll_add(int epfd, int fd) {
 	struct epoll_event ev = {
-	    .data.fd = fd,
-	    .events = EPOLLIN,
+		.data.fd = fd,
+		.events = EPOLLIN,
 	};
 
 	epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
@@ -62,8 +62,8 @@ static void cmc_epoll_add(int epfd, int fd) {
 
 static void cmc_epoll_del(int epfd, int fd) {
 	struct epoll_event ev = {
-	    .data.fd = fd,
-	    .events = EPOLLIN,
+		.data.fd = fd,
+		.events = EPOLLIN,
 	};
 
 	epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
@@ -114,7 +114,7 @@ void cmc_handle_client_data(int client_fd, int epfd) {
 	ssize_t bytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	CMC_DEBUG("Received %ld bytes", bytes);
 	if (bytes == 0) {
-	    CMC_DEBUG("Client disconnected");
+		CMC_DEBUG("Client disconnected");
 		close(client_fd);
 		cmc_epoll_del(epfd, client_fd);
 		return;
