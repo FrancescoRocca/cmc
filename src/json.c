@@ -2,20 +2,19 @@
 
 #include <yyjson.h>
 
-char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players, int online_players,
-							char *description_text) {
+char *cmc_json_build_status(cmc_status *status) {
 	yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
 	yyjson_mut_val *root = yyjson_mut_obj(doc);
 	yyjson_mut_doc_set_root(doc, root);
 
 	yyjson_mut_val *version = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_str(doc, version, "name", name);
-	yyjson_mut_obj_add_uint(doc, version, "protocol", protocol);
+	yyjson_mut_obj_add_str(doc, version, "name", status->name);
+	yyjson_mut_obj_add_uint(doc, version, "protocol", status->protocol);
 	yyjson_mut_obj_add_val(doc, root, "version", version);
 
 	yyjson_mut_val *players = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_int(doc, players, "max", max_players);
-	yyjson_mut_obj_add_int(doc, players, "online", online_players);
+	yyjson_mut_obj_add_int(doc, players, "max", status->max_players);
+	yyjson_mut_obj_add_int(doc, players, "online", status->online_players);
 	yyjson_mut_obj_add_val(doc, root, "players", players);
 
 	yyjson_mut_val *sample = yyjson_mut_arr(doc);
@@ -25,11 +24,11 @@ char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players
 	yyjson_mut_arr_add_val(sample, ptest);
 	yyjson_mut_obj_add_val(doc, players, "sample", sample);
 
-	yyjson_mut_val *description = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_str(doc, description, "text", description_text);
-	yyjson_mut_obj_add_val(doc, root, "description", description);
+	yyjson_mut_val *desc = yyjson_mut_obj(doc);
+	yyjson_mut_obj_add_str(doc, desc, "text", status->description);
+	yyjson_mut_obj_add_val(doc, root, "description", desc);
 
-	/* TODO: use a config instead of hardcoding the favicon */
+	/* @TODO: use a config instead of hardcoding the favicon */
 	char favicon[4096] =
 		"data:image/"
 		"png;base64,"
