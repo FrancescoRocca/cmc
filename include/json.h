@@ -3,7 +3,14 @@
 
 #include <stdint.h>
 
-char *cmc_json_build_status(const char *name, uint64_t protocol, int max_players, int online_players,
-							char *description_text);
+typedef struct cmc_status {
+	const char *name;
+	uint64_t protocol;
+	int max_players;
+	int online_players;
+	char *description;
+} cmc_status;
+
+char *cmc_json_build_status(cmc_status *status);
 
 #endif

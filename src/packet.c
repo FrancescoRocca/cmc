@@ -1,4 +1,4 @@
-#include "packets.h"
+#include "packet.h"
 
 #include <jansson.h>
 #include <netinet/in.h>
@@ -184,8 +184,15 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 }
 
 void cmc_send_status_response(cmc_packet *packet) {
-	char *dump = cmc_json_build_status("1.21.8", packet->handshake->protocol_version, 20, 0, "Hello, world!");
-	// CMC_DEBUG("%s", dump);
+	cmc_status status = {
+		.description = "Hello, world!",
+		.max_players = 20,
+		.online_players = 0,
+		.name = "1.21.8",
+		.protocol = packet->handshake->protocol_version,
+	};
+
+	char *dump = cmc_json_build_status(&status);
 
 	size_t json_len = strlen(dump);
 	size_t packet_len = _varint_size(json_len) + 1 + json_len;

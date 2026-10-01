@@ -13,24 +13,24 @@
 /* Packet ID - VarInt */
 /* Data - ByteArray */
 
-enum cmc_handshake_intent_t {
+typedef enum cmc_handshake_intent {
 	STATUS,
 	LOGIN,
 	TRANSFER,
-};
+} cmc_handshake_intent;
 
-typedef struct cmc_handshake_packet_t {
+typedef struct cmc_handshake_packet {
 	uint64_t protocol_version;
 	char server_address[SERVER_ADDRESS_SIZE];
 	unsigned short server_port;
-	enum cmc_handshake_intent_t intent;
+	cmc_handshake_intent intent;
 } cmc_handshake_packet;
 
-typedef struct cmc_packet_t {
+typedef struct cmc_packet {
 	int client_fd;
 	uint length;
 	uint8_t id;
-	struct cmc_handshake_packet_t *handshake;
+	cmc_handshake_packet *handshake;
 } cmc_packet;
 
 cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len);

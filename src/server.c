@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include "debug.h"
-#include "packets.h"
+#include "packet.h"
 
 int cmc_setup_socket() {
 	struct addrinfo hints;
@@ -18,8 +18,8 @@ int cmc_setup_socket() {
 	int ret;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;		 /* IPv4 */
-	hints.ai_socktype = SOCK_STREAM; /* TCP */
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
 	ret = getaddrinfo(CMC_HOST, CMC_PORT, &hints, &result);
