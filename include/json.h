@@ -8,7 +8,7 @@ typedef struct cmc_status {
 	uint64_t protocol;
 	int max_players;
 	int online_players;
-	char *description;
+	char *motd;
 } cmc_status;
 
 char *cmc_json_build_status(cmc_status *status);

@@ -25,7 +25,7 @@ char *cmc_json_build_status(cmc_status *status) {
 	yyjson_mut_obj_add_val(doc, players, "sample", sample);
 
 	yyjson_mut_val *desc = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_str(doc, desc, "text", status->description);
+	yyjson_mut_obj_add_str(doc, desc, "text", status->motd);
 	yyjson_mut_obj_add_val(doc, root, "description", desc);
 
 	/* @TODO: use a config instead of hardcoding the favicon */

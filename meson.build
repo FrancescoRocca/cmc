@@ -1,4 +1,4 @@
-project('cmc', 'c')
+project('cmc', 'c', version: '0.1.0')
 
 inc_dir = include_directories('include')
 

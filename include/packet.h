@@ -1,8 +1,10 @@
-#ifndef CMC_PACKETS_H
-#define CMC_PACKETS_H
+#ifndef CMC_PACKET_H
+#define CMC_PACKET_H
 
 #include <stdint.h>
 #include <sys/types.h>
+
+#include "config.h"
 
 #define SERVER_ADDRESS_SIZE 255
 #define SEGMENT_BITS 0x7F
@@ -33,10 +35,10 @@ typedef struct cmc_packet {
 	cmc_handshake_packet *handshake;
 } cmc_packet;
 
-cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len);
+cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize_t len);
 cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *buf, ssize_t len);
 
-void cmc_send_status_response(cmc_packet *packet);
+void cmc_send_status_response(cmc_packet *packet, cmc_config *config);
 void cmc_send_ping_response(cmc_packet *packet, const uint8_t *p);
 
 void cmc_free_packet(cmc_packet *packet);

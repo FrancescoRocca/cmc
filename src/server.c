@@ -12,7 +12,7 @@
 #include "debug.h"
 #include "packet.h"
 
-int cmc_setup_socket() {
+int cmc_setup_socket(cmc_config *config) {
 	struct addrinfo hints;
 	struct addrinfo *result;
 	int ret;
@@ -22,7 +22,7 @@ int cmc_setup_socket() {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	ret = getaddrinfo(CMC_HOST, CMC_PORT, &hints, &result);
+	ret = getaddrinfo(config->host, config->port, &hints, &result);
 	if (ret != 0) {
 		fprintf(stderr, "getaddrinfo(): %s\n", gai_strerror(ret));
 		return -1;
@@ -69,7 +69,7 @@ static void cmc_epoll_del(int epfd, int fd) {
 	epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &ev);
 }
 
-void cmc_server_loop(int sockfd) {
+void cmc_server_loop(cmc_config *config, int sockfd) {
 	int epfd = epoll_create1(0);
 	cmc_epoll_add(epfd, sockfd);
 
@@ -77,7 +77,6 @@ void cmc_server_loop(int sockfd) {
 	int nfds;
 
 	for (;;) {
-		/* Accept a new client */
 		nfds = epoll_wait(epfd, events, EP_MAX_EVENTS, -1);
 
 		if (nfds == 0) {
@@ -86,11 +85,9 @@ void cmc_server_loop(int sockfd) {
 
 		for (int i = 0; i < nfds; ++i) {
 			if (events[i].data.fd == sockfd) {
-				/* Handle new connection */
 				cmc_handle_new_client(sockfd, epfd);
 			} else {
-				/* Handle client data */
-				cmc_handle_client_data(events[i].data.fd, epfd);
+				cmc_handle_client_data(config, events[i].data.fd, epfd);
 			}
 		}
 	}
@@ -108,7 +105,7 @@ void cmc_handle_new_client(int sockfd, int epfd) {
 	cmc_epoll_add(epfd, client_fd);
 }
 
-void cmc_handle_client_data(int client_fd, int epfd) {
+void cmc_handle_client_data(cmc_config *config, int client_fd, int epfd) {
 	uint8_t buf[4096];
 
 	ssize_t bytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
@@ -120,7 +117,7 @@ void cmc_handle_client_data(int client_fd, int epfd) {
 		return;
 	}
 
-	cmc_packet *packet = cmc_parse_packet(client_fd, buf, bytes);
+	cmc_packet *packet = cmc_parse_packet(config, client_fd, buf, bytes);
 
 	cmc_free_packet(packet);
 }

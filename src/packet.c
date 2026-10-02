@@ -1,6 +1,5 @@
 #include "packet.h"
 
-#include <jansson.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -51,11 +50,11 @@ static int _varint_size(int value) {
 }
 
 static void _write_varint(int fd, int value) {
-	uint8_t buffer[5]; /* Max 5 bytes (VarInt) */
+	uint8_t buffer[5];
 	int i = 0;
 
 	while (1) {
-		uint8_t temp = value & SEGMENT_BITS; /* Retrieve lower bits */
+		uint8_t temp = value & SEGMENT_BITS;
 		value >>= 7;
 
 		if (value != 0) {
@@ -72,7 +71,7 @@ static void _write_varint(int fd, int value) {
 	send(fd, buffer, i, 0);
 }
 
-cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
+cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize_t len) {
 	if (!buf || !len) {
 		return NULL;
 	}
@@ -86,18 +85,18 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 
 	_print_hex(buf, len);
 
-	/* Parse length */
+	// Parse length
 	const uint8_t *p = buf;
 	packet->length = _read_varint(&p);
 	CMC_DEBUG("Packet length: %d", packet->length);
 
-	/* Parse packet id */
+	// Parse packet id
 	packet->id = _read_varint(&p);
 	CMC_DEBUG("Packet id: %d", packet->id);
 
 	switch (packet->id) {
 		case 0x00: {
-			/* Handshake or Login */
+			// Handshake or Login
 			CMC_DEBUG("=> Handshake");
 			packet->handshake = cmc_parse_handshake_packet(p, packet->length);
 
@@ -108,7 +107,7 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 			/* Check intent */
 			switch (packet->handshake->intent) {
 				case STATUS: {
-					cmc_send_status_response(packet);
+					cmc_send_status_response(packet, config);
 					break;
 				}
 				default: {
@@ -119,7 +118,7 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 			break;
 		}
 		case 0x01: {
-			/* Ping */
+			// Ping
 			CMC_DEBUG("=> Ping");
 			cmc_send_ping_response(packet, p);
 
@@ -132,7 +131,7 @@ cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
 
 cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) {
 	if (len == 1) {
-		/* Status Request packet */
+		// Status Request packet
 		CMC_DEBUG("=> Status Request");
 		return NULL;
 	}
@@ -143,26 +142,22 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 	}
 	memset(packet, 0, sizeof(cmc_handshake_packet));
 
-	/* Protocol version */
+	// Protocol version
 	packet->protocol_version = _read_varint(&p);
-	// CMC_DEBUG("Protocol version: %ld", packet->protocol_version);
 
-	/* Server address */
+	// Server address
 	uint chars = *p++;
-	// CMC_DEBUG("Server address len: %d", chars);
 	for (int i = 0; i < chars; ++i) {
 		packet->server_address[i] = p[0];
 		p++;
 	}
 	packet->server_address[chars] = '\0';
-	// CMC_DEBUG("Packet server address: %s", packet->server_address);
 
-	/* Server port (2 bytes) */
+	// Server port
 	packet->server_port = p[0] << 8 | p[1];
 	p += 2;
-	// CMC_DEBUG("Packet server port: %d", packet->server_port);
 
-	/* Intent */
+	// Intent
 	uint8_t intent = *p;
 	switch (intent) {
 		case 1: {
@@ -178,15 +173,14 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 			break;
 		}
 	}
-	// CMC_DEBUG("Packet intent: %d", packet->intent);
 
 	return packet;
 }
 
-void cmc_send_status_response(cmc_packet *packet) {
+void cmc_send_status_response(cmc_packet *packet, cmc_config *config) {
 	cmc_status status = {
-		.description = "Hello, world!",
-		.max_players = 20,
+		.motd = config->motd,
+		.max_players = config->max_players,
 		.online_players = 0,
 		.name = "1.21.8",
 		.protocol = packet->handshake->protocol_version,

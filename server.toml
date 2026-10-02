@@ -1,6 +1,6 @@
 [server]
 host = "localhost"
-port = 25565
+port = "25565"
 max-players = 20
 motd = "Hello, this server is coded in C!"
 favicon = "favicon.ico"
