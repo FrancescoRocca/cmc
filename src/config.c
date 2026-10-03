@@ -29,54 +29,50 @@ static int parse_int(toml_result_t *result, const char *str, int *dst) {
 	return 0;
 }
 
-cmc_config *cmc_config_load() {
+cmc_error cmc_config_load(cmc_config *config) {
+	if (!config) {
+		return CMC_NULL;
+	}
+
+	cmc_error err = CMC_OK;
+
 	// Parse toml file
 	toml_result_t result = toml_parse_file_ex("server.toml");
 	if (!result.ok) {
-		return NULL;
-	}
-
-	// Allocate config struct
-	cmc_config *config = malloc(sizeof(*config));
-	if (!config) {
-		return NULL;
+		return CONFIG_PARSE;
 	}
 
 	// Parse host
 	if (parse_string(&result, "server.host", config->host, sizeof(config->host)) != 0) {
-		fprintf(stderr, "Missing or invalid sever.host in config\n");
+		err = CONFIG_HOST;
 		goto error;
 	}
 
 	// Parse port
 	if (parse_string(&result, "server.port", config->port, sizeof(config->port)) != 0) {
-		fprintf(stderr, "Missing or invalid server.port in config\n");
+		err = CONFIG_PORT;
 		goto error;
 	}
 
 	// Parse motd
 	if (parse_string(&result, "server.motd", config->motd, sizeof(config->motd)) != 0) {
-		fprintf(stderr, "Missing or invalid server.motd in config\n");
+		err = CONFIG_MOTD;
 		goto error;
 	}
 
 	// Parse max-players
 	if (parse_int(&result, "server.max-players", &config->max_players) != 0) {
-		fprintf(stderr, "Missing or invalid server.max-players in config\n");
+		err = CONFIG_MAX_PLAYERS;
 		goto error;
 	}
 
-	toml_free(result);
-	return config;
+	// Parse favicon
+	if (parse_string(&result, "server.favicon", config->favicon, sizeof(config->favicon)) != 0) {
+		err = CONFIG_FAVICON;
+		goto error;
+	}
 
 error:
-	cmc_config_free(config);
 	toml_free(result);
-	return NULL;
-}
-
-void cmc_config_free(cmc_config *config) {
-	if (config) {
-		free(config);
-	}
+	return err;
 }
