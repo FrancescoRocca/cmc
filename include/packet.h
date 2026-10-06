@@ -10,11 +10,6 @@
 #define SEGMENT_BITS 0x7F
 #define CONTINUE_BIT 0x80
 
-/* Packet Format */
-/* Length - VarInt (PacketID + Data) */
-/* Packet ID - VarInt */
-/* Data - ByteArray */
-
 typedef enum cmc_handshake_intent {
 	STATUS,
 	LOGIN,

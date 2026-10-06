@@ -8,9 +8,11 @@ typedef struct cmc_status {
 	uint64_t protocol;
 	int max_players;
 	int online_players;
-	char *motd;
+	char *description;
+	char favicon[4092];
 } cmc_status;
 
+// Return the stringify json
 char *cmc_json_build_status(cmc_status *status);
 
 #endif

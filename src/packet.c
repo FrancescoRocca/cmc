@@ -104,7 +104,7 @@ cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize
 				return NULL;
 			}
 
-			/* Check intent */
+			// Check intent
 			switch (packet->handshake->intent) {
 				case STATUS: {
 					cmc_send_status_response(packet, config);
