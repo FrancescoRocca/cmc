@@ -55,7 +55,7 @@ cmc_error cmc_config_load(cmc_config *config) {
 	}
 
 	// Parse motd
-	if (parse_string(&result, "server.motd", config->motd, sizeof(config->motd)) != 0) {
+	if (parse_string(&result, "server.motd", config->description, sizeof(config->description)) != 0) {
 		err = CONFIG_MOTD;
 		goto error;
 	}

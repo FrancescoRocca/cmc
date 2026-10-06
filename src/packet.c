@@ -10,15 +10,6 @@
 #include "debug.h"
 #include "json.h"
 
-static void _print_hex(void *buf, ssize_t len) {
-	const uint8_t *p = buf;
-	for (ssize_t i = 0; i < len; ++i) {
-		fprintf(stdout, "0x%02x ", p[i]);
-	}
-	fprintf(stdout, "\n");
-	fflush(stdout);
-}
-
 static int _read_varint(const uint8_t **p) {
 	int value = 0;
 	int pos = 0;
@@ -83,7 +74,7 @@ cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize
 	memset(packet, 0, sizeof(cmc_packet));
 	packet->client_fd = client_fd;
 
-	_print_hex(buf, len);
+	DEBUG_HEX(buf, len);
 
 	// Parse length
 	const uint8_t *p = buf;
@@ -179,13 +170,12 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 
 void cmc_send_status_response(cmc_packet *packet, cmc_config *config) {
 	cmc_status status = {
-		.motd = config->motd,
+		.description = config->description,
 		.max_players = config->max_players,
 		.online_players = 0,
 		.name = "1.21.8",
 		.protocol = packet->handshake->protocol_version,
 	};
-
 	char *dump = cmc_json_build_status(&status);
 
 	size_t json_len = strlen(dump);

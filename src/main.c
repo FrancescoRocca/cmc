@@ -17,7 +17,7 @@ int main(void) {
 	}
 
 	CMC_DEBUG("Running cmc (%s:%s)\n", config.host, config.port);
-	CMC_DEBUG("MOTD: %s\n", config.motd);
+	CMC_DEBUG("MOTD: %s\n", config.description);
 	CMC_DEBUG("Max players: %d\n", config.max_players);
 
 	// Setup server socket

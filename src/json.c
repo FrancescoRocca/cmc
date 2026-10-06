@@ -30,7 +30,7 @@ char *cmc_json_build_status(cmc_status *status) {
 
 	// Motd
 	yyjson_mut_val *desc = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_str(doc, desc, "text", status->motd);
+	yyjson_mut_obj_add_str(doc, desc, "text", status->description);
 	yyjson_mut_obj_add_val(doc, root, "description", desc);
 
 	// Add favicon
