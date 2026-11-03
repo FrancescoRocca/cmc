@@ -13,3 +13,15 @@ toml_dep = dependency('libtomlc17')
 deps = [yyjson_dep, toml_dep]
 
 executable('cmc', sources, include_directories: inc_dir, dependencies: deps)
+
+# Clang-format
+clang_format = find_program('clang-format', required: false)
+
+if clang_format.found()
+  format_files = sources + headers
+
+  run_target(
+    'format',
+    command: [clang_format, '-i'] + format_files,
+  )
+endif
