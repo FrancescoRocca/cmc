@@ -39,36 +39,42 @@ cmc_error cmc_config_load(cmc_config *config) {
 	// Parse toml file
 	toml_result_t result = toml_parse_file_ex("server.toml");
 	if (!result.ok) {
-		return CONFIG_PARSE;
+		return CMC_CONFIG_PARSE;
 	}
 
 	// Parse host
 	if (parse_string(&result, "server.host", config->host, sizeof(config->host)) != 0) {
-		err = CONFIG_HOST;
+		err = CMC_CONFIG_HOST;
 		goto error;
 	}
 
 	// Parse port
 	if (parse_string(&result, "server.port", config->port, sizeof(config->port)) != 0) {
-		err = CONFIG_PORT;
+		err = CMC_CONFIG_PORT;
+		goto error;
+	}
+
+	// Parse port
+	if (parse_string(&result, "server.version", config->version, sizeof(config->version)) != 0) {
+		err = CMC_CONFIG_PORT;
 		goto error;
 	}
 
 	// Parse motd
 	if (parse_string(&result, "server.motd", config->description, sizeof(config->description)) != 0) {
-		err = CONFIG_MOTD;
+		err = CMC_CONFIG_MOTD;
 		goto error;
 	}
 
 	// Parse max-players
 	if (parse_int(&result, "server.max-players", &config->max_players) != 0) {
-		err = CONFIG_MAX_PLAYERS;
+		err = CMC_CONFIG_MAX_PLAYERS;
 		goto error;
 	}
 
 	// Parse favicon
 	if (parse_string(&result, "server.favicon", config->favicon, sizeof(config->favicon)) != 0) {
-		err = CONFIG_FAVICON;
+		err = CMC_CONFIG_FAVICON;
 		goto error;
 	}
 

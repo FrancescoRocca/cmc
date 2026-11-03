@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,6 +7,9 @@
 #include "server.h"
 
 int main(void) {
+	// Ignore SIGPIPE
+	signal(SIGPIPE, SIG_IGN);
+
 	// Load server config from file
 	cmc_error err;
 	cmc_config config;

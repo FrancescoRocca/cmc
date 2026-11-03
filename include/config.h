@@ -3,17 +3,19 @@
 
 #include "error.h"
 
-#define HOST_LEN 64
-#define PORT_LEN 6
-#define MOTD_LEN 1024
-#define FAVICON_LEN 256
+#define CMC_HOST_LEN 64
+#define CMC_PORT_LEN 6
+#define CMC_VERSION_LEN 32
+#define CMC_MOTD_LEN 1024
+#define CMC_FAVICON_LEN 256
 
 typedef struct cmc_config {
-	char host[HOST_LEN];
-	char port[PORT_LEN];
+	char host[CMC_HOST_LEN];
+	char port[CMC_PORT_LEN];
+	char version[CMC_VERSION_LEN];
 	int max_players;
-	char description[MOTD_LEN];
-	char favicon[FAVICON_LEN];
+	char description[CMC_MOTD_LEN];
+	char favicon[CMC_FAVICON_LEN];
 } cmc_config;
 
 cmc_error cmc_config_load(cmc_config *config);

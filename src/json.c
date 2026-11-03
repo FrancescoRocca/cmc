@@ -10,7 +10,7 @@ char *cmc_json_build_status(cmc_status *status) {
 
 	// Add version and protocol
 	yyjson_mut_val *version = yyjson_mut_obj(doc);
-	yyjson_mut_obj_add_str(doc, version, "name", status->name);
+	yyjson_mut_obj_add_str(doc, version, "name", status->version);
 	yyjson_mut_obj_add_uint(doc, version, "protocol", status->protocol);
 	yyjson_mut_obj_add_val(doc, root, "version", version);
 

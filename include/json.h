@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 typedef struct cmc_status {
-	const char *name;
+	const char *version;
 	uint64_t protocol;
 	int max_players;
 	int online_players;

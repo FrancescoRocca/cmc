@@ -117,7 +117,7 @@ void cmc_handle_client_data(cmc_config *config, int client_fd, int epfd) {
 		return;
 	}
 
-	cmc_packet *packet = cmc_parse_packet(config, client_fd, buf, bytes);
+	cmc_packet *packet = cmc_parse_packet(client_fd, buf, bytes);
 
 	cmc_free_packet(packet);
 }

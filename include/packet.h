@@ -6,19 +6,19 @@
 
 #include "config.h"
 
-#define SERVER_ADDRESS_SIZE 255
-#define SEGMENT_BITS 0x7F
-#define CONTINUE_BIT 0x80
+#define CMC_SERVER_ADDR_SIZE 255
+#define CMC_SEGMENT_BITS 0x7F
+#define CMC_CONTINUE_BIT 0x80
 
 typedef enum cmc_handshake_intent {
-	STATUS,
-	LOGIN,
-	TRANSFER,
+	CMC_STATUS,
+	CMC_LOGIN,
+	CMC_TRANSFER,
 } cmc_handshake_intent;
 
 typedef struct cmc_handshake_packet {
 	uint64_t protocol_version;
-	char server_address[SERVER_ADDRESS_SIZE];
+	char server_address[CMC_SERVER_ADDR_SIZE];
 	unsigned short server_port;
 	cmc_handshake_intent intent;
 } cmc_handshake_packet;
@@ -30,7 +30,7 @@ typedef struct cmc_packet {
 	cmc_handshake_packet *handshake;
 } cmc_packet;
 
-cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize_t len);
+cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len);
 cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *buf, ssize_t len);
 
 void cmc_send_status_response(cmc_packet *packet, cmc_config *config);

@@ -10,25 +10,6 @@
 #include "debug.h"
 #include "json.h"
 
-static int _read_varint(const uint8_t **p) {
-	int value = 0;
-	int pos = 0;
-
-	while (1) {
-		uint8_t byte = **p;
-		(*p)++;
-		value |= (byte & SEGMENT_BITS) << pos;
-
-		if ((byte & CONTINUE_BIT) == 0) {
-			break;
-		}
-
-		pos += 7;
-	}
-
-	return value;
-}
-
 static int _varint_size(int value) {
 	int size = 0;
 
@@ -40,16 +21,35 @@ static int _varint_size(int value) {
 	return size;
 }
 
+static int _read_varint(const uint8_t **p) {
+	int value = 0;
+	int pos = 0;
+
+	while (1) {
+		uint8_t byte = **p;
+		(*p)++;
+		value |= (byte & CMC_SEGMENT_BITS) << pos;
+
+		if ((byte & CMC_CONTINUE_BIT) == 0) {
+			break;
+		}
+
+		pos += 7;
+	}
+
+	return value;
+}
+
 static void _write_varint(int fd, int value) {
 	uint8_t buffer[5];
 	int i = 0;
 
 	while (1) {
-		uint8_t temp = value & SEGMENT_BITS;
+		uint8_t temp = value & CMC_SEGMENT_BITS;
 		value >>= 7;
 
 		if (value != 0) {
-			temp |= CONTINUE_BIT;
+			temp |= CMC_CONTINUE_BIT;
 		}
 
 		buffer[i++] = temp;
@@ -62,48 +62,28 @@ static void _write_varint(int fd, int value) {
 	send(fd, buffer, i, 0);
 }
 
-cmc_packet *cmc_parse_packet(cmc_config *config, int client_fd, void *buf, ssize_t len) {
-	if (!buf || !len) {
+cmc_packet *cmc_parse_packet(int client_fd, void *buf, ssize_t len) {
+	if (!buf || len <= 0) {
 		return NULL;
 	}
 
-	cmc_packet *packet = malloc(sizeof(cmc_packet));
+	cmc_packet *packet = calloc(1, sizeof(cmc_packet));
 	if (!packet) {
 		return NULL;
 	}
-	memset(packet, 0, sizeof(cmc_packet));
 	packet->client_fd = client_fd;
 
-	DEBUG_HEX(buf, len);
-
-	// Parse length
+	// Parse length and packet id
 	const uint8_t *p = buf;
 	packet->length = _read_varint(&p);
-	CMC_DEBUG("Packet length: %d", packet->length);
-
-	// Parse packet id
-	packet->id = _read_varint(&p);
-	CMC_DEBUG("Packet id: %d", packet->id);
 
 	switch (packet->id) {
 		case 0x00: {
 			// Handshake or Login
-			CMC_DEBUG("=> Handshake");
 			packet->handshake = cmc_parse_handshake_packet(p, packet->length);
 
 			if (!packet->handshake) {
 				return NULL;
-			}
-
-			// Check intent
-			switch (packet->handshake->intent) {
-				case STATUS: {
-					cmc_send_status_response(packet, config);
-					break;
-				}
-				default: {
-					break;
-				}
 			}
 
 			break;
@@ -152,15 +132,15 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 	uint8_t intent = *p;
 	switch (intent) {
 		case 1: {
-			packet->intent = STATUS;
+			packet->intent = CMC_STATUS;
 			break;
 		}
 		case 2: {
-			packet->intent = LOGIN;
+			packet->intent = CMC_LOGIN;
 			break;
 		}
 		case 3: {
-			packet->intent = TRANSFER;
+			packet->intent = CMC_TRANSFER;
 			break;
 		}
 	}
@@ -168,12 +148,28 @@ cmc_handshake_packet *cmc_parse_handshake_packet(const uint8_t *p, ssize_t len) 
 	return packet;
 }
 
+int cmc_send_response(cmc_config *config, cmc_packet *packet) {
+	// Check intent
+	switch (packet->handshake->intent) {
+		case CMC_STATUS: {
+			cmc_send_status_response(packet, config);
+			break;
+		}
+		default: {
+			break;
+		}
+	}
+
+	return 0;
+}
+
 void cmc_send_status_response(cmc_packet *packet, cmc_config *config) {
 	cmc_status status = {
 		.description = config->description,
 		.max_players = config->max_players,
+		// @TODO: fix online players count
 		.online_players = 0,
-		.name = "1.21.8",
+		.version = config->version,
 		.protocol = packet->handshake->protocol_version,
 	};
 	char *dump = cmc_json_build_status(&status);
